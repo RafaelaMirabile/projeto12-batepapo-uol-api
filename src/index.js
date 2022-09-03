@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { application } from 'express'
 import cors from'cors'
 import dotenv from 'dotenv'
 import { MongoClient} from 'mongodb'
@@ -65,6 +65,7 @@ server.post('/participants', async (req,res)=>{
 
         await db.collection('participantes').insertOne(newParticipant);
         await db.collection('mensagens').insertOne(newMessage);
+        
         res.sendStatus(201);
 
     }catch(error){
@@ -111,8 +112,37 @@ server.post('/messages', async (req,res)=>{
     }catch(error){
         console.error(error);
     }
+});
 
-})
+server.get('/messages', async (req,res)=>{
+
+    const limit = parseInt(req.query.limit);
+    const {user} = req.headers;
+
+      try{
+          const messages = await db.collection('mensagens').find().toArray();
+          
+          const allowedMessage = await messages.filter(message =>{
+                const privateMessageToUser = message.type === "private_message" && message.to !== user;
+                const privateMessageFromUser  = message.type === "private_message" && message.from !== user;
+                const messageFromAll = message.to === "Todos";
+                
+                return(privateMessageFromUser || privateMessageToUser || messageFromAll);
+          });         
+          
+          if(limit){
+            const limitMessages = await allowedMessage.slice(-limit);
+            res.send(limitMessages);
+          }
+          console.log(allowedMessage);
+          res.send(allowedMessage);
+      }
+      
+      catch(error){
+          res.status(500).send(error.message);
+      }
+
+  });
 
 server.listen(5007, ()=>
 console.log('Listening on port 5007'));
