@@ -19,6 +19,7 @@ mongoClient.connect().then(()=>{
     db = mongoClient.db('bate_papo_oul');
 });
 
+
 /*PARTICIPANTS*/
 
 server.get('/participants', async (req,res)=>{
@@ -68,9 +69,8 @@ server.post('/participants', async (req,res)=>{
         res.sendStatus(201);
 
     }catch(error){
-        console.error(error);
-    }
-})
+        res.status(500).send(error.message)}
+});
 
 /*MESSAGES*/
 
@@ -155,8 +155,7 @@ server.get('/messages', async (req,res)=>{
             res.sendStatus(404);
         }
         
-        await db.collection('participantes').updateOne({name : user},
-            {$set:{lastStatus: Date.now()}});
+        await db.collection('participantes').updateOne({name : user},{$set:{lastStatus: Date.now()}});
        
         res.sendStatus(200);
     }
@@ -164,8 +163,38 @@ server.get('/messages', async (req,res)=>{
     catch(error){
         res.status(500).send(error.message);
     }
-  })
+  });
 
+  setInterval(async ()=>{
+    try{
+
+        const participants = await  db.collection('participantes').find().toArray();       
+        const time = Date.now();
+        
+        for(let i = 0; i < participants.length ;i++){
+            
+            const participant = participants[i];
+            
+            if(time - participant.lastStatus > 10000){
+                
+                const newMessage = {
+                    from : participant.name,
+                    to: "Todos",
+                    text:"sai da sala...",
+                    type:"status",
+                    time: dayjs().format("HH:mm:ss")
+                };
+                
+                await db.collection('participantes').deleteOne({name : participant.name});
+                await db.collection('mensagens').insertOne(newMessage);
+           }
+        }
+    }
+    catch(error){
+        console.error(error);
+    }
+
+}, 15000);
 
 server.listen(5007, ()=>
 console.log('Listening on port 5007'));
