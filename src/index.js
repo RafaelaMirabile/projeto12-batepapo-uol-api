@@ -39,7 +39,6 @@ server.post('/participants', async (req,res)=>{
     const participantValidated = validateParticipant(participant);
     const repeatedUserName = await db.collection('participantes').findOne({name});
 
-
     try{
         if(repeatedUserName){
             res.status(409).send("User already exists!");
@@ -84,7 +83,6 @@ server.post('/messages', async (req,res)=>{
     const messageValidated = validateMessage(message);
 
     const allowMessage = await db.collection('participantes').findOne({name : user});
-    console.log(allowMessage);
 
     try{
         if(messageValidated){
@@ -123,8 +121,8 @@ server.get('/messages', async (req,res)=>{
           const messages = await db.collection('mensagens').find().toArray();
           
           const allowedMessage = await messages.filter(message =>{
-                const privateMessageToUser = message.type === "private_message" && message.to !== user;
-                const privateMessageFromUser  = message.type === "private_message" && message.from !== user;
+                const privateMessageToUser = message.type === "private_message" && message.to === user;
+                const privateMessageFromUser  = message.type === "private_message" && message.from === user;
                 const messageFromAll = message.to === "Todos";
                 
                 return(privateMessageFromUser || privateMessageToUser || messageFromAll);
@@ -134,7 +132,7 @@ server.get('/messages', async (req,res)=>{
             const limitMessages = await allowedMessage.slice(-limit);
             res.send(limitMessages);
           }
-          console.log(allowedMessage);
+          console.log(messages);
           res.send(allowedMessage);
       }
       
@@ -143,6 +141,31 @@ server.get('/messages', async (req,res)=>{
       }
 
   });
+
+  /*STATUS*/
+
+  server.post('/status', async (req,res)=>{
+    
+    const {user} = req.headers;
+
+    try{
+        const foundUser = await db.collection('participantes').findOne({name : user});      
+        
+        if(!foundUser){
+            res.sendStatus(404);
+        }
+        
+        await db.collection('participantes').updateOne({name : user},
+            {$set:{lastStatus: Date.now()}});
+       
+        res.sendStatus(200);
+    }
+
+    catch(error){
+        res.status(500).send(error.message);
+    }
+  })
+
 
 server.listen(5007, ()=>
 console.log('Listening on port 5007'));
