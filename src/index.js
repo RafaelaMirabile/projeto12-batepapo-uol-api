@@ -1,5 +1,5 @@
 import express, { application } from 'express'
-import cors from'cors'
+import cors from 'cors'
 import dotenv from 'dotenv'
 import { MongoClient} from 'mongodb'
 import {validateParticipant} from "./validation/validateParticipant.js"
@@ -18,9 +18,6 @@ const  mongoClient = new MongoClient(process.env.MONGO_URI);
 mongoClient.connect().then(()=>{
     db = mongoClient.db('bate_papo_oul');
 });
-
-
-/*PARTICIPANTS*/
 
 server.get('/participants', async (req,res)=>{
     
@@ -72,8 +69,6 @@ server.post('/participants', async (req,res)=>{
         res.status(500).send(error.message)}
 });
 
-/*MESSAGES*/
-
 server.post('/messages', async (req,res)=>{
     
     const {to,text,type} = req.body;
@@ -98,11 +93,10 @@ server.post('/messages', async (req,res)=>{
         const newMessage ={
             from: user, 
             to: to, 
-            text: text, 
+            text: 'entra na sala...', 
             type: type, 
             time: dayjs().format('HH:MM:SS')
         }
-        console.log(newMessage);
 
         await db.collection('mensagens').insertOne(newMessage);
         res.sendStatus(201);
@@ -132,7 +126,6 @@ server.get('/messages', async (req,res)=>{
             const limitMessages = await allowedMessage.slice(-limit);
             res.send(limitMessages);
           }
-          console.log(messages);
           res.send(allowedMessage);
       }
       
@@ -140,11 +133,9 @@ server.get('/messages', async (req,res)=>{
           res.status(500).send(error.message);
       }
 
-  });
+});
 
-  /*STATUS*/
-
-  server.post('/status', async (req,res)=>{
+server.post('/status', async (req,res)=>{
     
     const {user} = req.headers;
 
@@ -163,9 +154,9 @@ server.get('/messages', async (req,res)=>{
     catch(error){
         res.status(500).send(error.message);
     }
-  });
+});
 
-  setInterval(async ()=>{
+setInterval(async ()=>{
     try{
 
         const participants = await  db.collection('participantes').find().toArray();       
@@ -196,6 +187,5 @@ server.get('/messages', async (req,res)=>{
 
 }, 15000);
 
-server.listen(5007, ()=>
-console.log('Listening on port 5007'));
-
+server.listen(5000, ()=>
+console.log('Listening on port 5000'));
